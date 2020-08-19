@@ -123,6 +123,11 @@
     // map() is a useful primitive iteration function that works a lot
     // like each(), but in addition to running the operation on all
     // the members, it also maintains an array of results.
+    var result = [];
+    _.each(collection, function(item) {
+      result.push(iterator(item));
+    });
+    return result;
   };
 
   /*
@@ -164,6 +169,17 @@
   //   }); // should be 5, regardless of the iterator function passed in
   //          No accumulator is given so the first element is used.
   _.reduce = function(collection, iterator, accumulator) {
+
+    var noAccumulator = arguments.length === 2;
+    _.each(collection, function(item) {
+      if (noAccumulator) {
+        accumulator = item;
+        noAccumulator = false;
+      } else {
+        accumulator = iterator(accumulator, item);
+      }
+    });
+    return accumulator;
   };
 
   // Determine if the array or object contains a given value (using `===`).
@@ -182,12 +198,27 @@
   // Determine whether all of the elements match a truth test.
   _.every = function(collection, iterator) {
     // TIP: Try re-using reduce() here.
+    iterator = iterator || _.identity;
+    return _.reduce(collection, function(accumulator, item) {
+      if (accumulator === false) {
+        return false;
+      }
+      return !!iterator(item);
+    }, true);
   };
 
   // Determine whether any of the elements pass a truth test. If no iterator is
   // provided, provide a default one
   _.some = function(collection, iterator) {
     // TIP: There's a very clever way to re-use every() here.
+    iterator = iterator || _.identity;
+    return _.reduce(collection, function(accumulator, item) {
+      if (accumulator) {
+        return true;
+      }
+      return !!iterator(item);
+    }, false);
+
   };
 
 
@@ -210,11 +241,28 @@
   //     bla: "even more stuff"
   //   }); // obj1 now contains key1, key2, key3 and bla
   _.extend = function(obj) {
+    // should extend obj1 by ob2 if not contained already
+    var args = Array.from(arguments);
+    _.each(args.slice(1), function(item) {
+      for (var key in item) {
+        obj[key] = item[key];
+      }
+    });
+    return obj;
   };
 
   // Like extend, but doesn't ever overwrite a key that already
   // exists in obj
   _.defaults = function(obj) {
+    var args = Array.from(arguments);
+    _.each(args.slice(1), function(item) {
+      for (var key in item) {
+        if (obj[key] === undefined) {
+          obj[key] = item[key];
+        }
+      }
+    });
+    return obj;
   };
 
 
@@ -258,6 +306,22 @@
   // already computed the result for the given argument and return that value
   // instead if possible.
   _.memoize = function(func) {
+    // create object to hold args and results
+    var results = {};
+    return function(memo) {
+      memo = JSON.stringify(arguments);
+      // if object at current arg is in ^results
+      if (results[memo] !== undefined) {
+        // return object at arg value
+        return results[memo];
+        // else add a result of memo.apply(null, arguments) to results
+      } else {
+        var result = func.apply(this, arguments);
+        // assign object at arg the result
+        results[memo] = result;
+        return result;
+      }
+    };
   };
 
   // Delays a function for the given number of milliseconds, and then calls
@@ -267,6 +331,9 @@
   // parameter. For example _.delay(someFunction, 500, 'a', 'b') will
   // call someFunction('a', 'b') after 500ms
   _.delay = function(func, wait) {
+    var args = Array.from(arguments);
+    var stopwatch = function() { return func.apply(this, args.slice(2)); };
+    return setTimeout(stopwatch, wait);
   };
 
 
@@ -281,6 +348,18 @@
   // input array. For a tip on how to make a copy of an array, see:
   // http://mdn.io/Array.prototype.slice
   _.shuffle = function(array) {
+    // copy the array to mutate
+    let copy = array.slice();
+    // iterate through the array
+    for (var i = copy.length - 1; i > 0; i -= 1) {
+      //get random between zero and i (inclusive)
+      var rand = Math.floor((i + 1) * Math.random());
+      //swap i and the zero-indexed number
+      var temp = copy[rand];
+      copy[rand] = copy[i];
+      copy[i] = temp;
+    }
+    return copy;
   };
 
 
